@@ -1,0 +1,14 @@
+{
+  "name": "thelar/fbf-custom-zoho-woo",
+  "description": "",
+  "keywords": ["wordpress", "plugin"],
+  "homepage": "https://github.com/thelar/fbf-custom-zoho-woo",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Kevin Price-Ward",
+      "email": "kevin@code-mill.co.uk"
+    }
+  ],
+  "type": "wordpress-plugin"
+}
