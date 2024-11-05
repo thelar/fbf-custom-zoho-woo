@@ -45,110 +45,115 @@ function action_woocommerce_thankyou( $order_get_id ) {
 
 	$OrderParam = $products = array();
 
+	// Product Categories
+	$product_cats = [];
+	$product_brands = [];
+
 	foreach ( $order->get_items() as $item_id => $item ) {
-
-			 $product_id    = $item->get_product_id();
-			 $_product 		= wc_get_product( $product_id );
-			 $unit_price    = $_product->get_price();
-			 $product_name  = $_product->get_name();
-			 $sku    		= $_product->get_sku();
-			 $quantity	    = $_product->get_stock_quantity();
-			 $tax_status 	= $_product->get_tax_status();
-			 $categories 	= get_the_terms( $product_id, 'product_cat');
-			 $catname       = $categories[0]->name;
-
-			 $weight 		= 	$_product->get_weight();
-			 $length 		= 	$_product->get_length();
-			 $width 		= 	$_product->get_width();
-			 $height 		=	$_product->get_height();
-
-			 $attributes    = $_product->get_attributes();
-
-			$Productparam     = array('pname' => $product_name, 'unit_price' => $unit_price , 'stock' => $quantity , 'tax_status' => $tax_status, 'cname' => $catname , 'product_code' => $sku , 'weight' => $weight , 'length' => $length, 'width' => $width, 'height' => $height ,'attributes' => $attributes , 'product_id' => $product_id);
-
-
-			 $pquantity = $item->get_quantity();
-
-			 /* search product in zoho crm */
-
-			$ZohoProductID	= zoho_product_update($Productparam);
-
-			$product = array('Product_Code' => $sku , 'id' => $ZohoProductID );
-
-			$products[] = array('product' => $product , 'quantity' => $pquantity);
+		$product_id    = $item->get_product_id();
+		$_product 		= wc_get_product( $product_id );
+		$unit_price    = $_product->get_price();
+		$product_name  = $_product->get_name();
+		$sku    		= $_product->get_sku();
+		$quantity	    = $_product->get_stock_quantity();
+		$tax_status 	= $_product->get_tax_status();
+		$categories 	= get_the_terms( $product_id, 'product_cat');
+		$catname       = $categories[0]->name;
+		$brands = get_the_terms($product_id, 'pa_brand-name');
+		$brandname       = $brands[0]->name;
+		if(!in_array($catname, $product_cats)){
+			$product_cats[] = $catname;
 		}
-
-		$address = $billing_address_1;
-
-		if(!empty($billing_address_2)){
-
-			$address .= ', '.$billing_address_2;
+		if(!in_array($brandname, $product_brands)){
+			$product_brands[] = $brandname;
 		}
+		$weight 		= 	$_product->get_weight();
+		$length 		= 	$_product->get_length();
+		$width 		= 	$_product->get_width();
+		$height 		=	$_product->get_height();
+		$attributes    = $_product->get_attributes();
+		$Productparam     = array('pname' => $product_name, 'unit_price' => $unit_price , 'stock' => $quantity , 'tax_status' => $tax_status, 'cname' => $catname , 'product_code' => $sku , 'weight' => $weight , 'length' => $length, 'width' => $width, 'height' => $height ,'attributes' => $attributes , 'product_id' => $product_id);
+		$pquantity = $item->get_quantity();
 
-		$Saddress = $shipping_address_1;
+		/* search product in zoho crm */
+		$ZohoProductID	= zoho_product_update($Productparam);
+		$product = array('Product_Code' => $sku , 'id' => $ZohoProductID );
+		$products[] = array('product' => $product , 'quantity' => $pquantity);
+	}
 
-		if(!empty($shipping_address_2)){
+	$address = $billing_address_1;
 
-			$Saddress .= ', '.$shipping_address_2;
-		}
+	if(!empty($billing_address_2)){
+		$address .= ', '.$billing_address_2;
+	}
 
-		$countryName = WC()->countries->countries[ $billing_country  ];
+	$Saddress = $shipping_address_1;
 
-		$countryNameShip = WC()->countries->countries[ $shipping_country  ];
+	if(!empty($shipping_address_2)){
+		$Saddress .= ', '.$shipping_address_2;
+	}
 
-		$shippinCost = $order->get_shipping_tax() + $order->get_shipping_total();
+	$countryName = WC()->countries->countries[ $billing_country  ];
 
-		$discount	 = $order->get_discount_tax() + $order->get_discount_total();
+	$countryNameShip = WC()->countries->countries[ $shipping_country  ];
 
-		$orderDate = $order->get_date_created();
+	$shippinCost = $order->get_shipping_tax() + $order->get_shipping_total();
 
+	$discount	 = $order->get_discount_tax() + $order->get_discount_total();
 
-		$OrderParam['Contact_Name']  		 = array('id' => $ZohoContactID);
-		$OrderParam['Email']  		 		 = $billing_email;
-
-		$OrderParam['Phone']  		 		 = $billing_phone;
-		$OrderParam['Customer_IP_Address']   = get_post_meta($order_get_id,'_customer_ip_address',true);
-		$OrderParam['Customer_User_Agent']   = get_post_meta($order_get_id,'_customer_user_agent',true);
-		$OrderParam['Session_Data']   		 = home_url().'/visitor_session?id='.get_post_meta($order_get_id,'_fbf_order_data_session_id',true);
-
-		$date_format = get_option( 'date_format' );
-
-		$content_post = get_post($order_get_id);
-
-		$dateOrder  = date('Y-m-d',strtotime($content_post->post_date));
-		$dateOrder .= 'T';
-		$dateOrder .= date('H:i:s',strtotime($content_post->post_date));
-		$dateOrder .= '+01:00';
-
-		$OrderParam['Payment_Method']  	     = $order->get_payment_method();
-
-		$OrderParam['Billing_Street'] 	= $address;
-		$OrderParam['Billing_State'] 	= $billing_state;
-		$OrderParam['Billing_City'] 	= $billing_city;
-		$OrderParam['Billing_Country'] 	= $countryName;
-		$OrderParam['Billing_Code'] 	= $billing_postcode;
-
-		$OrderParam['Shipping_Street'] 	= $Saddress;
-		$OrderParam['Shipping_State'] 	= $shipping_state;
-		$OrderParam['Shipping_City'] 	= $shipping_city;
-		$OrderParam['Shipping_Country'] = $countryNameShip;
-		$OrderParam['Shipping_Code'] 	= $shipping_postcode;
-
-		$OrderParam['Shipping_Method'] 	= $order->get_shipping_method();
-		$OrderParam['Shipping_Cost'] 	= floatval(number_format($shippinCost,2));
-
-		$OrderParam['Discount'] 	= number_format($discount,2);
+	$orderDate = $order->get_date_created();
 
 
-		$OrderParam['Discount_Offered'] 	= number_format($discount,2);
+	$OrderParam['Contact_Name']  		 = array('id' => $ZohoContactID);
+	$OrderParam['Email']  		 		 = $billing_email;
 
-		$OrderParam['Adjustment'] 	= floatval(number_format($shippinCost,2));
+	$OrderParam['Phone']  		 		 = $billing_phone;
+	$OrderParam['Customer_IP_Address']   = get_post_meta($order_get_id,'_customer_ip_address',true);
+	$OrderParam['Customer_User_Agent']   = get_post_meta($order_get_id,'_customer_user_agent',true);
+	$OrderParam['Session_Data']   		 = home_url().'/visitor_session?id='.get_post_meta($order_get_id,'_fbf_order_data_session_id',true);
 
-		$OrderParam['Coupons_Used'] 	= $order->get_coupon_codes()[0];
+	$date_format = get_option( 'date_format' );
 
-		$OrderParam['Customer_Note'] 	= $order->get_customer_note();
+	$content_post = get_post($order_get_id);
 
-		$OrderParam['Product_Details'] = $products;
+	$dateOrder  = date('Y-m-d',strtotime($content_post->post_date));
+	$dateOrder .= 'T';
+	$dateOrder .= date('H:i:s',strtotime($content_post->post_date));
+	$dateOrder .= '+01:00';
+
+	$OrderParam['Payment_Method']  	     = $order->get_payment_method();
+
+	$OrderParam['Billing_Street'] 	= $address;
+	$OrderParam['Billing_State'] 	= $billing_state;
+	$OrderParam['Billing_City'] 	= $billing_city;
+	$OrderParam['Billing_Country'] 	= $countryName;
+	$OrderParam['Billing_Code'] 	= $billing_postcode;
+
+	$OrderParam['Shipping_Street'] 	= $Saddress;
+	$OrderParam['Shipping_State'] 	= $shipping_state;
+	$OrderParam['Shipping_City'] 	= $shipping_city;
+	$OrderParam['Shipping_Country'] = $countryNameShip;
+	$OrderParam['Shipping_Code'] 	= $shipping_postcode;
+
+	$OrderParam['Shipping_Method'] 	= $order->get_shipping_method();
+	$OrderParam['Shipping_Cost'] 	= floatval(number_format($shippinCost,2));
+
+	$OrderParam['Discount'] 	= number_format($discount,2);
+
+	$OrderParam['Discount_Offered'] 	= number_format($discount,2);
+
+	$OrderParam['Adjustment'] 	= floatval(number_format($shippinCost,2));
+
+	$OrderParam['Coupons_Used'] 	= $order->get_coupon_codes()[0];
+
+	$OrderParam['Customer_Note'] 	= $order->get_customer_note();
+
+	$OrderParam['Product_Details'] = $products;
+
+	// Categories and Brands
+	$OrderParam['Product_Category'] = $product_cats;
+	$OrderParam['Product_Brands'] = $product_brands;
+
 
 	if(current_user_switched() && $order->get_payment_method() == 'cod'){
 
