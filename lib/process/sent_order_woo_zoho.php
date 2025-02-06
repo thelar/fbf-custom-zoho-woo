@@ -385,6 +385,12 @@ function zoho_contact_recoard_id($order_data,$orderID){
     // Marketing signup
     $zohoParam['Marketing_Signup'] = get_post_meta($orderID, '_marketing_signup', true)==='1';
 
+	// Update the user meta if they exist
+	$user = get_user_by('email', $billing_email);
+	if($user){
+		update_user_meta($user->ID, 'marketing_signup', get_post_meta($orderID, '_marketing_signup', true));
+	}
+
 	$ContactCreatedBy = "";
 
 	if(is_user_logged_in()){
