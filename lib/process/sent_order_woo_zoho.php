@@ -144,7 +144,9 @@ function action_woocommerce_thankyou( $order_get_id ) {
 
 	$OrderParam['Adjustment'] 	= floatval(number_format($shippinCost,2));
 
-	$OrderParam['Coupons_Used'] 	= $order->get_coupon_codes()[0];
+	if(!empty($order->get_coupon_codes())){
+		$OrderParam['Coupons_Used'] 	= $order->get_coupon_codes()[0];
+	}
 
 	$OrderParam['Customer_Note'] 	= $order->get_customer_note();
 
