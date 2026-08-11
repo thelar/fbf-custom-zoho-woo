@@ -59,7 +59,7 @@ function zoho_woocommerce_order_status_changed_action($id ,$old_status,$new_stat
 	$order 		   = wc_get_order( $id );
 	$order_status  = $order->get_status();
 	
-	$saleOrderID = 	get_post_meta($id,'_zoho_sale_order_id',true);
+	$saleOrderID = $order->get_meta('_zoho_sale_order_id', true);
 	
 	$saleStatusarray = custom_woocommerce_get_all_order_statuses();
 	

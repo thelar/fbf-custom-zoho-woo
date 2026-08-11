@@ -38,8 +38,8 @@ function action_woocommerce_thankyou( $order_get_id ) {
 	$shipping_postcode 		= $order_data['shipping']['postcode'];
 	$shipping_country 		= $order_data['shipping']['country'];
 
-	$order_session_id 	 = get_post_meta($order_get_id,'_fbf_order_data_session_id',true);
-	$order_delivery_date = get_post_meta($order_get_id,'_gs_selected_date',true);
+	$order_session_id 	 = $order->get_meta('_fbf_order_data_session_id', true);
+	$order_delivery_date = $order->get_meta('_gs_selected_date', true);
 
 	$ZohoContactID = zoho_contact_recoard_id($order_data,$order_get_id);
 
@@ -108,18 +108,20 @@ function action_woocommerce_thankyou( $order_get_id ) {
 	$OrderParam['Email']  		 		 = $billing_email;
 
 	$OrderParam['Phone']  		 		 = $billing_phone;
-	$OrderParam['Customer_IP_Address']   = get_post_meta($order_get_id,'_customer_ip_address',true);
-	$OrderParam['Customer_User_Agent']   = get_post_meta($order_get_id,'_customer_user_agent',true);
-	$OrderParam['Session_Data']   		 = home_url().'/visitor_session?id='.get_post_meta($order_get_id,'_fbf_order_data_session_id',true);
+	$OrderParam['Customer_IP_Address']   = $order->get_meta('_customer_ip_address', true);
+	$OrderParam['Customer_User_Agent']   = $order->get_meta('_customer_user_agent', true);
+	$OrderParam['Session_Data']   		 = home_url().'/visitor_session?id=' . $order_session_id;
 
 	$date_format = get_option( 'date_format' );
 
-	$content_post = get_post($order_get_id);
-
-	$dateOrder  = date('Y-m-d',strtotime($content_post->post_date));
-	$dateOrder .= 'T';
-	$dateOrder .= date('H:i:s',strtotime($content_post->post_date));
-	$dateOrder .= '+01:00';
+	if($orderDate){
+		$dateOrder  = $orderDate->date('Y-m-d');
+		$dateOrder .= 'T';
+		$dateOrder .= $orderDate->date('H:i:s');
+		$dateOrder .= $orderDate->date('P');
+	}else{
+		$dateOrder = '';
+	}
 
 	$OrderParam['Payment_Method']  	     = $order->get_payment_method();
 
@@ -163,19 +165,19 @@ function action_woocommerce_thankyou( $order_get_id ) {
 
 		/* Already check Quote created or not */
 
-		$AlreadyQuote = get_post_meta($order_get_id,'_zoho_quote_id',true);
+		$AlreadyQuote = $order->get_meta('_zoho_quote_id', true);
 
 		if(empty($AlreadyQuote)){
 
 			$ZohoContactID = zoho_contact_recoard_id($order_data,$order_get_id);
 
 			$OrderParam['Subject']    			= "Quote #".$order_get_id;
-			$OrderParam['Valid_Till']  			= get_post_meta($order_get_id,'_quote_expiry',true);
+			$OrderParam['Valid_Till']  			= $order->get_meta('_quote_expiry', true);
 			$OrderParam['Quote_Stage'] 			= "Quote Open";
 			$OrderParam['Quote_Source'] 		= "Agent via Website";
-			$OrderParam['Quote_Reason'] 		= get_post_meta($order_get_id,'_quote_reason',true);
-			$OrderParam['Taken_By'] 			= get_post_meta($order_get_id,'_taken_by',true);
-			$OrderParam['Is_Quote'] 		    = get_post_meta($order_get_id,'_is_sales_quote',true);
+			$OrderParam['Quote_Reason'] 		= $order->get_meta('_quote_reason', true);
+			$OrderParam['Taken_By'] 			= $order->get_meta('_taken_by', true);
+			$OrderParam['Is_Quote'] 		    = $order->get_meta('_is_sales_quote', true);
 			$OrderParam['Date_Quoted']          = $dateOrder;
 
 			$CreateQuote = CreateQuoteZOHOCRM($OrderParam);
@@ -184,13 +186,14 @@ function action_woocommerce_thankyou( $order_get_id ) {
 
 				$note = __('ZOHO Quote record ID <b>'.$CreateQuote.'</b>');
 				$order->add_order_note( $note );
-				update_post_meta($order_get_id,'_zoho_quote_id',$CreateQuote);
+				$order->update_meta_data('_zoho_quote_id', $CreateQuote);
+				$order->save();
 			}
 		}
 
 	}else{
 
-		$AlreadySOCreated = get_post_meta($order_get_id,'_zoho_sale_order_id',true);
+		$AlreadySOCreated = $order->get_meta('_zoho_sale_order_id', true);
 
 		if(empty($AlreadySOCreated)){
 
@@ -200,23 +203,23 @@ function action_woocommerce_thankyou( $order_get_id ) {
 			$OrderParam['Transaction_ID']  	     = $order->get_transaction_id();
 			$OrderParam['Order_Completed_Date']  = $dateOrder;
 
-			$OrderParam['Is_national_fitting']    = get_post_meta($order_get_id,'_is_national_fitting',true);
-			$OrderParam['Vehicle_Registration']   = get_post_meta($order_get_id,'_national_fitting_reg_no',true);
-			$OrderParam['Fitting_station_ID']     = get_post_meta($order_get_id,'_national_fitting_garage_id',true);
-			$OrderParam['Fitting_Type']           = get_post_meta($order_get_id,'_national_fitting_type',true);
-			$OrderParam['Confirmed_SO']           = get_post_meta($order_get_id,'_order_from_quote',true);
-			$OrderParam['Taken_By']               = ucfirst(get_post_meta($order_get_id,'_taken_by',true));
+			$OrderParam['Is_national_fitting']    = $order->get_meta('_is_national_fitting', true);
+			$OrderParam['Vehicle_Registration']   = $order->get_meta('_national_fitting_reg_no', true);
+			$OrderParam['Fitting_station_ID']     = $order->get_meta('_national_fitting_garage_id', true);
+			$OrderParam['Fitting_Type']           = $order->get_meta('_national_fitting_type', true);
+			$OrderParam['Confirmed_SO']           = $order->get_meta('_order_from_quote', true);
+			$OrderParam['Taken_By']               = ucfirst($order->get_meta('_taken_by', true));
 
 
-			$Delivery_date = !empty(get_post_meta($order_get_id,'_gs_selected_date',true)) ? get_post_meta($order_get_id,'_gs_selected_date',true) : '';
+			$Delivery_date = $order_delivery_date ?: '';
 
-			$is_national_fitting = get_post_meta($order_get_id,'_is_national_fitting',true);
+			$is_national_fitting = $order->get_meta('_is_national_fitting', true);
 
 			$Fitting_Date_Time_Slot = '';
 
 			if(!empty($is_national_fitting) && $is_national_fitting == 1){
 
-				$getfittingDate = get_post_meta($order_get_id,'_national_fitting_date_time',true);
+				$getfittingDate = $order->get_meta('_national_fitting_date_time', true);
 
 				if(!empty($getfittingDate) && is_array($getfittingDate)){
 
@@ -225,7 +228,7 @@ function action_woocommerce_thankyou( $order_get_id ) {
 
 			}
 
-			$Fitment_advice = !empty(get_post_meta($order_get_id,'_fitting_advice',true)) ? get_post_meta($order_get_id,'_fitting_advice',true) : '';
+			$Fitment_advice = $order->get_meta('_fitting_advice', true) ?: '';
 
 			$OrderParam['Fitting_Date_Time_Slot']   = $Fitting_Date_Time_Slot;
 
@@ -233,13 +236,13 @@ function action_woocommerce_thankyou( $order_get_id ) {
 
 			$OrderParam['Delivery_date']           = $Delivery_date;
 
-			$Sales_Order_Source  = !empty(get_post_meta($order_get_id,'_converted_by',true)) ? get_post_meta($order_get_id,'_converted_by',true) : '';
+			$Sales_Order_Source  = $order->get_meta('_converted_by', true) ?: '';
 
 			$OrderParam['Sales_Order_Source']           = !empty($Sales_Order_Source) ? ucfirst($Sales_Order_Source) : '';
 
 			/* if coupon apply into quote then coupon data will be sent with sale order */
 
-			$wpquoteID 			        = get_post_meta($order_get_id,'_order_from_quote',true);
+			$wpquoteID 			        = $order->get_meta('_order_from_quote', true);
 
 			if(!empty($wpquoteID)){
 
@@ -269,14 +272,15 @@ function action_woocommerce_thankyou( $order_get_id ) {
 
 				$note = __('ZOHO sale order record ID <b>'.$CreateSaleOrder.'</b>');
 				$order->add_order_note( $note );
-				update_post_meta($order_get_id,'_zoho_sale_order_id',$CreateSaleOrder);
+				$order->update_meta_data('_zoho_sale_order_id', $CreateSaleOrder);
+				$order->save();
 
 
-				$wpquoteID = get_post_meta($order_get_id,'_order_from_quote',true);
+				$wpquoteID = $order->get_meta('_order_from_quote', true);
+				$quote_order = $wpquoteID ? wc_get_order($wpquoteID) : null;
+				$ZohoQuoteId = $quote_order ? $quote_order->get_meta('_zoho_quote_id', true) : '';
 
-				$ZohoQuoteId = get_post_meta($wpquoteID,'_zoho_quote_id',true);
-
-				$Converted_by_Customer = ucfirst(get_post_meta($order_get_id,'_converted_by',true));
+				$Converted_by_Customer = ucfirst($order->get_meta('_converted_by', true));
 
 				if(!empty($ZohoQuoteId)){
 
@@ -305,6 +309,7 @@ add_action( 'woocommerce_thankyou', 'action_woocommerce_thankyou', 10, 1 );
 function zoho_contact_recoard_id($order_data,$orderID){
 
 	global $woocommerce,$wpdb;
+	$order = wc_get_order($orderID);
 
 	$billing_first_name = $order_data['billing']['first_name'];
 	$billing_last_name  = $order_data['billing']['last_name'];
@@ -345,54 +350,54 @@ function zoho_contact_recoard_id($order_data,$orderID){
 	$zohoParam['Mailing_City'] 	    = $billing_city;
 	$zohoParam['Mailing_Country'] 	= $countryName;
 	$zohoParam['Mailing_Zip'] 	    = $billing_postcode;
-	$zohoParam['Customer_User_Agent'] 	    = get_post_meta($orderID,'_customer_user_agent',true);
-	$zohoParam['Customer_IP_Address'] 	    = get_post_meta($orderID,'_customer_ip_address',true);
+	$zohoParam['Customer_User_Agent'] 	    = $order ? $order->get_meta('_customer_user_agent', true) : '';
+	$zohoParam['Customer_IP_Address'] 	    = $order ? $order->get_meta('_customer_ip_address', true) : '';
 	$zohoParam['Referrer'] 	    			= site_url();
 
 	// Vehicle info
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_manufacturers',true))){
-		$zohoParam['Vehicle_Make'] = get_post_meta($orderID,'_fbf_order_data_manufacturers',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_manufacturers', true))){
+		$zohoParam['Vehicle_Make'] = $order->get_meta('_fbf_order_data_manufacturers', true);
 	}
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_vehicles',true))){
-		$zohoParam['Vehicle_Model'] = get_post_meta($orderID,'_fbf_order_data_vehicles',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_vehicles', true))){
+		$zohoParam['Vehicle_Model'] = $order->get_meta('_fbf_order_data_vehicles', true);
 	}
 
 	// Tyre info
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_tyre_sizes',true))){
-		$zohoParam['Current_Tyre_Size'] = get_post_meta($orderID,'_fbf_order_data_tyre_sizes',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_tyre_sizes', true))){
+		$zohoParam['Current_Tyre_Size'] = $order->get_meta('_fbf_order_data_tyre_sizes', true);
 	}
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_tyre_types',true))){
-		$zohoParam['All_or_Mud_Terrain'] = get_post_meta($orderID,'_fbf_order_data_tyre_types',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_tyre_types', true))){
+		$zohoParam['All_or_Mud_Terrain'] = $order->get_meta('_fbf_order_data_tyre_types', true);
 	}
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_tyre_brands',true))){
-		$zohoParam['Tyre_Brand'] = get_post_meta($orderID,'_fbf_order_data_tyre_brands',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_tyre_brands', true))){
+		$zohoParam['Tyre_Brand'] = $order->get_meta('_fbf_order_data_tyre_brands', true);
 	}
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_tyre_names',true))){
-		$zohoParam['Tyre_Name'] = get_post_meta($orderID,'_fbf_order_data_tyre_names',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_tyre_names', true))){
+		$zohoParam['Tyre_Name'] = $order->get_meta('_fbf_order_data_tyre_names', true);
 	}
 
 
 	// Wheel info
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_wheel_sizes',true))){
-		$zohoParam['Current_Wheel_Size'] = get_post_meta($orderID,'_fbf_order_data_wheel_sizes',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_wheel_sizes', true))){
+		$zohoParam['Current_Wheel_Size'] = $order->get_meta('_fbf_order_data_wheel_sizes', true);
 	}
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_wheel_types',true))){
-		$zohoParam['Steel_or_Alloy'] = get_post_meta($orderID,'_fbf_order_data_wheel_types',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_wheel_types', true))){
+		$zohoParam['Steel_or_Alloy'] = $order->get_meta('_fbf_order_data_wheel_types', true);
 	}
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_wheel_brands',true))){
-		$zohoParam['Wheel_Brand'] = get_post_meta($orderID,'_fbf_order_data_wheel_brands',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_wheel_brands', true))){
+		$zohoParam['Wheel_Brand'] = $order->get_meta('_fbf_order_data_wheel_brands', true);
 	}
-	if(!empty(get_post_meta($orderID,'_fbf_order_data_wheel_names',true))){
-		$zohoParam['Wheel_Name'] = get_post_meta($orderID,'_fbf_order_data_wheel_names',true);
+	if($order && !empty($order->get_meta('_fbf_order_data_wheel_names', true))){
+		$zohoParam['Wheel_Name'] = $order->get_meta('_fbf_order_data_wheel_names', true);
 	}
 
     // Marketing signup
-    $zohoParam['Marketing_Signup'] = get_post_meta($orderID, '_marketing_signup', true)==='1';
+    $zohoParam['Marketing_Signup'] = $order ? $order->get_meta('_marketing_signup', true)==='1' : false;
 
 	// Update the user meta if they exist
 	$user = get_user_by('email', $billing_email);
 	if($user){
-		update_user_meta($user->ID, 'marketing_signup', get_post_meta($orderID, '_marketing_signup', true));
+		update_user_meta($user->ID, 'marketing_signup', $order ? $order->get_meta('_marketing_signup', true) : '');
 	}
 
 	$ContactCreatedBy = "";
