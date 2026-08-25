@@ -168,9 +168,7 @@ function action_woocommerce_thankyou( $order_get_id ) {
 		$AlreadyQuote = $order->get_meta('_zoho_quote_id', true);
 
 		if(empty($AlreadyQuote)){
-
 			$ZohoContactID = zoho_contact_recoard_id($order_data,$order_get_id);
-
 			$OrderParam['Subject']    			= "Quote #".$order_get_id;
 			$OrderParam['Valid_Till']  			= $order->get_meta('_quote_expiry', true);
 			$OrderParam['Quote_Stage'] 			= "Quote Open";
