@@ -108,8 +108,8 @@ function action_woocommerce_thankyou( $order_get_id ) {
 	$OrderParam['Email']  		 		 = $billing_email;
 
 	$OrderParam['Phone']  		 		 = $billing_phone;
-	$OrderParam['Customer_IP_Address']   = $order->get_meta('_customer_ip_address', true);
-	$OrderParam['Customer_User_Agent']   = $order->get_meta('_customer_user_agent', true);
+	$OrderParam['Customer_IP_Address']   = $order->get_customer_ip_address();
+	$OrderParam['Customer_User_Agent']   = $order->get_customer_user_agent();
 	$OrderParam['Session_Data']   		 = home_url().'/visitor_session?id=' . $order_session_id;
 
 	$date_format = get_option( 'date_format' );
@@ -348,8 +348,8 @@ function zoho_contact_recoard_id($order_data,$orderID){
 	$zohoParam['Mailing_City'] 	    = $billing_city;
 	$zohoParam['Mailing_Country'] 	= $countryName;
 	$zohoParam['Mailing_Zip'] 	    = $billing_postcode;
-	$zohoParam['Customer_User_Agent'] 	    = $order ? $order->get_meta('_customer_user_agent', true) : '';
-	$zohoParam['Customer_IP_Address'] 	    = $order ? $order->get_meta('_customer_ip_address', true) : '';
+	$zohoParam['Customer_User_Agent'] 	    = $order ? $order->get_customer_ip_address() : '';
+	$zohoParam['Customer_IP_Address'] 	    = $order ? $order->get_customer_ip_address() : '';
 	$zohoParam['Referrer'] 	    			= site_url();
 
 	// Vehicle info
